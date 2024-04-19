@@ -140,7 +140,7 @@ int main(int argc, char** argv) {
 		fprintf(stderr, "Wrote to '%s'\n", dbfile);
 	}
 
-	sqlite3_open(dbfile, &db);
+	sqlite3_open_v2(dbfile, &db, SQLITE_OPEN_READONLY, "unix-none");
 	if (db == NULL) {
 		fprintf(stderr, "sqlite3_open: %s\n", sqlite3_errmsg(db));
 		exit(1);
@@ -148,7 +148,7 @@ int main(int argc, char** argv) {
 
 	sqlite3_prepare_v2(db, "select ImageData from CanvasPreview limit 1", -1, &stmt, NULL);
 	while (sqlite3_step(stmt) != SQLITE_DONE) {
-		outfd = open(outfilename, O_WRONLY | O_CREAT | O_EXCL);
+		outfd = open(outfilename, O_WRONLY | O_CREAT | O_EXCL, 0660);
 		if (outfd == -1) {
 			fprintf(stderr, "opening %s: %s\n", outfilename, strerror(errno));
 			exit(1);
