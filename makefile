@@ -1,2 +1,6 @@
-clipthumb: clipthumb.c
-	$(CC) -o clipthumb -lsqlite3 clipthumb.c
+clipthumb: clipthumb.o
+	$(CC) -o clipthumb clipthumb.o -lsqlite3
+clipthumb.o: clipthumb.c
+	$(CC) -c -o clipthumb.o clipthumb.c
+clean:
+	rm -f clipthumb.o clipthumb

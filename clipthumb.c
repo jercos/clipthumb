@@ -13,8 +13,9 @@
 #define htonll(x) ((1==htonl(1)) ? (x) : ((uint64_t)htonl((x) & 0xFFFFFFFF) << 32) | htonl((x) >> 32))
 
 void usage(char *self) {
-	fprintf(stderr, "Clip Studio Paint file extractor\n"\
-			"Usage: %s [-x] [-q] filename\n\n"\
+	fprintf(stderr, "Clip Studio Paint thumbnail file extractor\n"\
+			"Usage: %s [-ofilename | -o filename] [-x] [-q] filename\n\n"\
+			"-o: filename for output PNG\n"\
 			"-x: extract external data objects\n"\
 			"-q: do not print messages to STDERR while extracting\n"\
 			"-p: accept input from a pipe, or the terminal\n", self);
@@ -29,6 +30,7 @@ int main(int argc, char** argv) {
 	bool extract = false;
 	bool quiet = false;
 	bool pipe = false;
+	char* outfilename = "output.png";
 
 	int infd = 0;
 	int outfd;
@@ -48,8 +50,10 @@ int main(int argc, char** argv) {
 			switch(curarg[0][1]) {
 				case '-':
 					fprintf(stderr, "GNU-style options not accepted, ignored '%s'.\n", curarg[0]);
+					break;
 				case 'h':
 					usage(argv[0]);
+					exit(0);
 					break;
 				case 'x':
 					extract = true;
@@ -59,6 +63,15 @@ int main(int argc, char** argv) {
 					break;
 				case 'p':
 					pipe = true;
+					break;
+				case 'o':
+					if (curarg[0][2] == '\0') {
+						outfilename = curarg[1];
+						curarg++;
+					} else {
+						outfilename = &curarg[0][2];
+					}
+					break;
 				default:
 					fprintf(stderr, "Unknown switch '-%c', ignoring.\n", curarg[0][1]);
 			}
@@ -135,9 +148,9 @@ int main(int argc, char** argv) {
 
 	sqlite3_prepare_v2(db, "select ImageData from CanvasPreview limit 1", -1, &stmt, NULL);
 	while (sqlite3_step(stmt) != SQLITE_DONE) {
-		outfd = open("output.png", O_WRONLY | O_CREAT | O_EXCL);
+		outfd = open(outfilename, O_WRONLY | O_CREAT | O_EXCL);
 		if (outfd == -1) {
-			fprintf(stderr, "opening output.png: %s\n", strerror(errno));
+			fprintf(stderr, "opening %s: %s\n", outfilename, strerror(errno));
 			exit(1);
 		}
 
