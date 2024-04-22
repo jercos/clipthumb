@@ -18,7 +18,7 @@ void usage(char *self) {
 			"-o: filename for output PNG\n"\
 			"-x: extract external data objects\n"\
 			"-q: do not print messages to STDERR while extracting\n"\
-			"-p: output to stdout\n", self);
+			"-p: output to stdout (overrides -o)\n", self);
 }
 
 int main(int argc, char** argv) {
@@ -30,7 +30,7 @@ int main(int argc, char** argv) {
 	bool extract = false;
 	bool quiet = false;
 	bool pipe = false;
-	char* outfilename = "output.png";
+	char* outfilename = NULL;
 
 	int infd = 0;
 	int outfd = 1;
@@ -79,7 +79,7 @@ int main(int argc, char** argv) {
 		} else if (!filename) {
 			filename = curarg[0];
 		} else {
-			fprintf(stderr, "Extra argument: '%s', please use me on one file at a time.\n", curarg[0]);
+			fprintf(stderr, "Extra argument: '%s', please use me on one file at a time.\n\n", curarg[0]);
 			usage(argv[0]);
 			exit(1);
 		}
@@ -94,6 +94,11 @@ int main(int argc, char** argv) {
 			fprintf(stderr, "opening %s: %s\n", filename, strerror(errno));
 			exit(1);
 		}
+	}
+	if (!outfilename && !pipe) {
+		fprintf(stderr, "No output filename given with -o, and -p not specified\n\n");
+		usage(argv[0]);
+		exit(1);
 	}
 	outfd = mkstemps(dbfile, dbsuffix);
 	if (outfd == -1) {
