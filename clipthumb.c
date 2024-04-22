@@ -147,22 +147,27 @@ int main(int argc, char** argv) {
 		exit(1);
 	}
 
-	sqlite3_prepare_v2(db, "select ImageData from CanvasPreview limit 1", -1, &stmt, NULL);
-	while (sqlite3_step(stmt) != SQLITE_DONE) {
-		outfd = open(outfilename, O_WRONLY | O_CREAT | O_EXCL, 0660);
-		if (outfd == -1) {
-			fprintf(stderr, "opening %s: %s\n", outfilename, strerror(errno));
-			status = 1;
-			break;
-		}
+	int err;
+	if ((err = sqlite3_prepare_v2(db, "select ImageData from CanvasPreview limit 1", -1, &stmt, NULL)) != SQLITE_OK) {
+		fprintf(stderr, "SQLite prepare: %s\n", sqlite3_errmsg(db));
+		exit(1);
+	}
 
+	outfd = open(outfilename, O_WRONLY | O_CREAT | O_TRUNC, 0660);
+	if (outfd == -1) {
+		fprintf(stderr, "opening %s: %s\n", outfilename, strerror(errno));
+		status = 1;
+	}
+
+	while (sqlite3_step(stmt) != SQLITE_DONE && status == 0) {
 		int pnglen = len = sqlite3_column_bytes(stmt, 0);
 		if (!quiet) {
 			fprintf(stderr, "Writing %llu bytes\n", pnglen);
 		}
 		write(outfd, sqlite3_column_blob(stmt, 0), pnglen);
-		close(outfd);
 	}
+
+	close(outfd);
 	sqlite3_finalize(stmt);
 	sqlite3_close(db);
 	unlink(dbfile);
