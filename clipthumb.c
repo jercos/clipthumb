@@ -44,6 +44,7 @@ int main(int argc, char** argv) {
 
 	sqlite3 *db;
 	sqlite3_stmt *stmt;
+	int status = 0; /* exit code, for non-fatal errors */
 
 	while (argv + argc > curarg) {
 		if (curarg[0][0] == '-') {
@@ -151,7 +152,8 @@ int main(int argc, char** argv) {
 		outfd = open(outfilename, O_WRONLY | O_CREAT | O_EXCL, 0660);
 		if (outfd == -1) {
 			fprintf(stderr, "opening %s: %s\n", outfilename, strerror(errno));
-			exit(1);
+			status = 1;
+			break;
 		}
 
 		int pnglen = len = sqlite3_column_bytes(stmt, 0);
@@ -164,4 +166,5 @@ int main(int argc, char** argv) {
 	sqlite3_finalize(stmt);
 	sqlite3_close(db);
 	unlink(dbfile);
+	exit(status);
 }
