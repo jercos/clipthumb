@@ -18,7 +18,7 @@ void usage(char *self) {
 			"-o: filename for output PNG\n"\
 			"-x: extract external data objects\n"\
 			"-q: do not print messages to STDERR while extracting\n"\
-			"-p: accept input from a pipe, or the terminal\n", self);
+			"-p: output to stdout\n", self);
 }
 
 int main(int argc, char** argv) {
@@ -33,7 +33,7 @@ int main(int argc, char** argv) {
 	char* outfilename = "output.png";
 
 	int infd = 0;
-	int outfd;
+	int outfd = 1;
 
 	char type[8];
 	uint64_t len;
@@ -84,11 +84,6 @@ int main(int argc, char** argv) {
 			exit(1);
 		}
 		curarg++;
-	}
-	if (!filename && !pipe) {
-		fprintf(stderr, "No filename provided, and -p not used.\n");
-		usage(argv[0]);
-		exit(1);
 	}
 	if (filename) {
 		if (!quiet) {
@@ -153,10 +148,12 @@ int main(int argc, char** argv) {
 		exit(1);
 	}
 
-	outfd = open(outfilename, O_WRONLY | O_CREAT | O_TRUNC, 0660);
-	if (outfd == -1) {
-		fprintf(stderr, "opening %s: %s\n", outfilename, strerror(errno));
-		status = 1;
+	if (!pipe) {
+		outfd = open(outfilename, O_WRONLY | O_CREAT | O_TRUNC, 0660);
+		if (outfd == -1) {
+			fprintf(stderr, "opening %s: %s\n", outfilename, strerror(errno));
+			status = 1;
+		}
 	}
 
 	while (sqlite3_step(stmt) != SQLITE_DONE && status == 0) {
@@ -167,7 +164,9 @@ int main(int argc, char** argv) {
 		write(outfd, sqlite3_column_blob(stmt, 0), pnglen);
 	}
 
-	close(outfd);
+	if (!pipe) {
+		close(outfd);
+	}
 	sqlite3_finalize(stmt);
 	sqlite3_close(db);
 	unlink(dbfile);
