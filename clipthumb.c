@@ -33,7 +33,7 @@ int main(int argc, char** argv) {
 	char* outfilename = NULL;
 
 	int infd = 0;
-	int outfd = 1;
+	int outfd;
 
 	char type[8];
 	uint64_t len;
@@ -153,7 +153,9 @@ int main(int argc, char** argv) {
 		exit(1);
 	}
 
-	if (!pipe) {
+	if (pipe) {
+		outfd = 1;
+	} else {
 		outfd = open(outfilename, O_WRONLY | O_CREAT | O_TRUNC, 0660);
 		if (outfd == -1) {
 			fprintf(stderr, "opening %s: %s\n", outfilename, strerror(errno));
